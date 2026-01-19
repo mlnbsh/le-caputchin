@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quiz — Oral (Catégories + Ajout)</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 24px; max-width: 980px; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin: 16px 0; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    button, select, input, textarea {
+      padding: 10px 12px; border-radius: 10px; border: 1px solid #ccc; background: #fff;
+    }
+    button { cursor: pointer; }
+    button:hover { background: #f6f6f6; }
+    textarea { width: min(820px, 100%); min-height: 72px; resize: vertical; }
+    input { width: min(820px, 100%); }
+    .muted { color: #666; }
+    .tag { font-size: 12px; padding: 3px 8px; border: 1px solid #ddd; border-radius: 999px; }
+    .answerBox { padding: 12px; border-radius: 10px; background: #fafafa; border: 1px dashed #ccc; display: none; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+    .ok { color: #0a7a2f; font-weight: 600; }
+    .ko { color: #b00020; font-weight: 600; }
+    .pill { font-size: 12px; padding: 2px 8px; border: 1px solid #ddd; border-radius: 999px; }
+    .spacer { height: 6px; }
+  </style>
+</head>
+<body>
+
+  <h1>Quiz (réponses à l’oral)</h1>
+  <p class="muted">Choisis une catégorie → une question s’affiche → tu réponds à l’oral → tu peux révéler la réponse.</p>
+
+  <!-- ===================== -->
+  <!-- AJOUT DE QUESTIONS -->
+  <!-- ===================== -->
+  <div class="card">
+    <h2>Ajouter une question</h2>
+    <p class="muted">Tes ajouts sont sauvegardés sur cet appareil (localStorage).</p>
+
+    <div class="row">
+      <label class="muted" for="addCat">Catégorie :</label>
+      <select id="addCat"></select>
+
+      <label class="muted" for="addType">Type :</label>
+      <select id="addType"></select>
+
+      <span class="pill" id="countPill">—</span>
+    </div>
+
+    <div class="spacer"></div>
+
+    <!-- Champs variables -->
+    <div id="fields"></div>
+
+    <div class="row" style="margin-top:10px">
+      <button id="addBtn">Ajouter</button>
+      <button id="clearStoredBtn" title="Supprime uniquement les questions ajoutées via le formulaire">Effacer mes ajouts</button>
+      <span id="addFeedback" class="muted"></span>
+    </div>
+  </div>
+
+  <!-- ===================== -->
+  <!-- CONTROLES QUIZ -->
+  <!-- ===================== -->
+  <div class="card">
+    <div class="row">
+      <label class="muted" for="catSelect">Catégorie :</label>
+      <select id="catSelect"></select>
+      <button id="startBtn">Démarrer</button>
+      <button id="shuffleBtn" title="Mélanger l'ordre des questions">Mélanger</button>
+
+      <span style="margin-left:auto" class="muted" id="progress">—</span>
+    </div>
+  </div>
+
+  <!-- ===================== -->
+  <!-- AFFICHAGE QUESTION -->
+  <!-- ===================== -->
+  <div class="card">
+    <div class="row">
+      <span class="tag" id="categoryTag">—</span>
+      <span class="muted" id="typeTag">—</span>
+    </div>
+
+    <h2 id="questionText">Choisis une catégorie puis clique “Démarrer”.</h2>
+    <p class="muted" id="hintText"></p>
+
+    <div class="row">
+      <button id="revealBtn" disabled>Révéler la réponse</button>
+      <button id="nextBtn" disabled>Question suivante</button>
+      <button id="resetBtn">Réinitialiser</button>
+    </div>
+
+    <div class="answerBox" id="answerBox">
+      <strong>Réponse :</strong>
+      <div id="answerText" style="margin-top:6px"></div>
+      <div class="muted" id="explainText" style="margin-top:6px"></div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================
+    // Banque "de base" (tu peux en laisser vide, et ajouter via le formulaire)
+    // =========================================================
+    const BASE_BANK = {
+      "Culture générale": [
+        // { type:"classic", q:"...", a:"...", explain:"(optionnel)" },
+      ],
+      "Expressions": [
+        // { type:"expression", start:"Début...", end:"fin...", explain:"(optionnel)" },
+      ],
+      "Action ou Vérité": [
+        // Pour l'instant vide comme tu l'as demandé (mais tu peux ajouter via le formulaire)
+        // { type:"action", q:"..." } ou { type:"verite", q:"..." }
+      ]
+    };
+
+    // =========================================================
+    // Persistance locale (questions ajoutées)
+    // =========================================================
+    const STORAGE_KEY = "quiz_custom_questions_v1";
+
+    function loadCustomBank() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return {};
+        const parsed = JSON.parse(raw);
+        return (parsed && typeof parsed === "object") ? parsed : {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveCustomBank(custom) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(custom));
+    }
+
+    function deepMergeBanks(base, custom) {
+      const merged = {};
+      const cats = new Set([...Object.keys(base), ...Object.keys(custom)]);
+      for (const c of cats) {
+        merged[c] = [
+          ...(base[c] ?? []),
+          ...(custom[c] ?? [])
+        ];
+      }
+      return merged;
+    }
+
+    let CUSTOM_BANK = loadCustomBank();
+    let BANK = deepMergeBanks(BASE_BANK, CUSTOM_BANK);
+
+    // =========================================================
+    // Éléments UI
+    // =========================================================
+    const catSelect = document.getElementById("catSelect");
+    const startBtn = document.getElementById("startBtn");
+    const shuffleBtn = document.getElementById("shuffleBtn");
+    const revealBtn = document.getElementById("revealBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    const categoryTag = document.getElementById("categoryTag");
+    const typeTag = document.getElementById("typeTag");
+    const progress = document.getElementById("progress");
+    const questionText = document.getElementById("questionText");
+    const hintText = document.getElementById("hintText");
+
+    const answerBox = document.getElementById("answerBox");
+    const answerText = document.getElementById("answerText");
+    const explainText = document.getElementById("explainText");
+
+    // Ajout
+    const addCat = document.getElementById("addCat");
+    const addType = document.getElementById("addType");
+    const fields = document.getElementById("fields");
+    const addBtn = document.getElementById("addBtn");
+    const clearStoredBtn = document.getElementById("clearStoredBtn");
+    const addFeedback = document.getElementById("addFeedback");
+    const countPill = document.getElementById("countPill");
+
+    // =========================================================
+    // Quiz state
+    // =========================================================
+    let deck = [];
+    let idx = -1;
+
+    // =========================================================
+    // Helpers
+    // =========================================================
+    function populateCategories() {
+      const cats = Object.keys(BANK);
+
+      catSelect.innerHTML = "";
+      addCat.innerHTML = "";
+
+      for (const cat of cats) {
+        const opt1 = document.createElement("option");
+        opt1.value = cat; opt1.textContent = cat;
+        catSelect.appendChild(opt1);
+
+        const opt2 = document.createElement("option");
+        opt2.value = cat; opt2.textContent = cat;
+        addCat.appendChild(opt2);
+      }
+    }
+
+    function setDisabledQuizControls(disabled) {
+      revealBtn.disabled = disabled;
+      nextBtn.disabled = disabled;
+    }
+
+    function shuffleArray(a) {
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function buildDeck(category) {
+      const list = BANK[category] ?? [];
+      deck = list.map(item => ({...item, category}));
+      idx = -1;
+    }
+
+    function typeLabel(t) {
+      if (t === "classic") return "Culture G";
+      if (t === "expression") return "Expression (deviner la fin)";
+      if (t === "action") return "Action";
+      if (t === "verite") return "Vérité";
+      return "—";
+    }
+
+    function renderEmpty(category) {
+      categoryTag.textContent = category;
+      typeTag.textContent = "—";
+      progress.textContent = `0 / 0`;
+      questionText.textContent = `Aucune question pour “${category}”. Ajoute-en avec le formulaire au-dessus.`;
+      hintText.textContent = "";
+      answerBox.style.display = "none";
+      setDisabledQuizControls(true);
+    }
+
+    function renderQuestion() {
+      if (!deck.length) return;
+
+      const q = deck[idx];
+
+      categoryTag.textContent = q.category;
+      typeTag.textContent = typeLabel(q.type);
+      progress.textContent = `${idx + 1} / ${deck.length}`;
+
+      answerBox.style.display = "none";
+      answerText.textContent = "";
+      explainText.textContent = "";
+
+      if (q.type === "classic") {
+        questionText.textContent = q.q;
+        hintText.textContent = "Répondez à l’oral, puis révélez la réponse.";
+      } else if (q.type === "expression") {
+        questionText.textContent = `Complète l’expression : ${q.start}`;
+        hintText.textContent = "Devine la fin à l’oral, puis révèle la réponse.";
+      } else if (q.type === "action" || q.type === "verite") {
+        questionText.textContent = q.q;
+        hintText.textContent = "Faites-le / répondez à l’oral, puis passez à la suivante.";
+      } else {
+        questionText.textContent = "Type inconnu (vérifie la question).";
+        hintText.textContent = "";
+      }
+
+      setDisabledQuizControls(false);
+    }
+
+    function startQuiz() {
+      const category = catSelect.value;
+      buildDeck(category);
+
+      if (!deck.length) {
+        renderEmpty(category);
+        return;
+      }
+      idx = 0;
+      renderQuestion();
+    }
+
+    function nextQuestion() {
+      if (!deck.length) return;
+      idx = (idx + 1) % deck.length;
+      renderQuestion();
+    }
+
+    function revealAnswer() {
+      if (!deck.length || idx < 0) return;
+      const q = deck[idx];
+
+      answerBox.style.display = "block";
+
+      if (q.type === "classic") {
+        answerText.textContent = q.a ?? "(réponse manquante)";
+      } else if (q.type === "expression") {
+        answerText.textContent = `${q.start} ${q.end ?? "(fin manquante)"}`;
+      } else if (q.type === "action" || q.type === "verite") {
+        // Action/Vérité : pas forcément une "réponse"
+        answerText.textContent = q.explain ? q.explain : "—";
+      } else {
+        answerText.textContent = "—";
+      }
+
+      explainText.textContent = q.explain ? q.explain : "";
+    }
+
+    function resetAll() {
+      deck = [];
+      idx = -1;
+
+      categoryTag.textContent = "—";
+      typeTag.textContent = "—";
+      progress.textContent = "—";
+      questionText.textContent = "Choisis une catégorie puis clique “Démarrer”.";
+      hintText.textContent = "";
+
+      answerBox.style.display = "none";
+      setDisabledQuizControls(true);
+    }
+
+    // =========================================================
+    // Formulaire d'ajout
+    // =========================================================
+    function setTypeOptionsForCategory(category) {
+      addType.innerHTML = "";
+
+      const opts = [];
+      if (category === "Culture générale") opts.push(["classic", "Culture générale"]);
+      else if (category === "Expressions") opts.push(["expression", "Expression"]);
+      else if (category === "Action ou Vérité") {
+        opts.push(["action", "Action"]);
+        opts.push(["verite", "Vérité"]);
+      } else {
+        // fallback
+        opts.push(["classic", "Question"]);
+      }
+
+      for (const [val, label] of opts) {
+        const o = document.createElement("option");
+        o.value = val; o.textContent = label;
+        addType.appendChild(o);
+      }
+    }
+
+    function renderFields() {
+      const category = addCat.value;
+      const type = addType.value;
+
+      fields.innerHTML = "";
+
+      // Champs communs
+      const explain = document.createElement("textarea");
+      explain.id = "f_explain";
+      explain.placeholder = "Explication (optionnel)";
+
+      if (type === "classic") {
+        fields.innerHTML = `
+          <div class="grid2">
+            <div>
+              <label class="muted">Question</label><br />
+              <textarea id="f_q" placeholder="Ex: Quelle est la capitale du Japon ?"></textarea>
+            </div>
+            <div>
+              <label class="muted">Réponse</label><br />
+              <textarea id="f_a" placeholder="Ex: Tokyo"></textarea>
+            </div>
+          </div>
+          <div style="margin-top:10px">
+            <label class="muted">Explication (optionnel)</label><br />
+            <textarea id="f_explain" placeholder="Ex: Tokyo est la capitale depuis 1868."></textarea>
+          </div>
+        `;
+      } else if (type === "expression") {
+        fields.innerHTML = `
+          <div class="grid2">
+            <div>
+              <label class="muted">Début de l’expression</label><br />
+              <textarea id="f_start" placeholder="Ex: Pierre qui roule…"></textarea>
+            </div>
+            <div>
+              <label class="muted">Fin à deviner</label><br />
+              <textarea id="f_end" placeholder="Ex: n’amasse pas mousse"></textarea>
+            </div>
+          </div>
+          <div style="margin-top:10px">
+            <label class="muted">Explication (optionnel)</label><br />
+            <textarea id="f_explain" placeholder="Ex: Une personne toujours en mouvement…"></textarea>
+          </div>
+        `;
+      } else if (type === "action" || type === "verite") {
+        fields.innerHTML = `
+          <div>
+            <label class="muted">${type === "action" ? "Action" : "Vérité"}</label><br />
+            <textarea id="f_q" placeholder="${type === "action" ? "Ex: Fais 10 squats." : "Ex: Quel est ton plus gros défaut ?"}"></textarea>
+          </div>
+          <div style="margin-top:10px">
+            <label class="muted">Note / explication (optionnel)</label><br />
+            <textarea id="f_explain" placeholder="Optionnel"></textarea>
+          </div>
+        `;
+      } else {
+        fields.innerHTML = `
+          <div>
+            <label class="muted">Question</label><br />
+            <textarea id="f_q" placeholder="Ta question…"></textarea>
+          </div>
+        `;
+      }
+
+      updateCountPill();
+      addFeedback.textContent = "";
+    }
+
+    function updateCountPill() {
+      const category = addCat.value;
+      const n = (BANK[category] ?? []).length;
+      countPill.textContent = `${n} question${n > 1 ? "s" : ""} dans "${category}"`;
+    }
+
+    function getVal(id) {
+      const el = document.getElementById(id);
+      return el ? el.value.trim() : "";
+    }
+
+    function rebuildBankFromStorage() {
+      CUSTOM_BANK = loadCustomBank();
+      BANK = deepMergeBanks(BASE_BANK, CUSTOM_BANK);
+      populateCategories();
+      updateCountPill();
+    }
+
+    function addQuestionFromForm() {
+      const category = addCat.value;
+      const type = addType.value;
+
+      let item = { type };
+
+      if (type === "classic") {
+        const q = getVal("f_q");
+        const a = getVal("f_a");
+        const explain = getVal("f_explain");
+        if (!q || !a) {
+          addFeedback.innerHTML = `<span class="ko">Il faut une question ET une réponse.</span>`;
+          return;
+        }
+        item.q = q;
+        item.a = a;
+        if (explain) item.explain = explain;
+      } else if (type === "expression") {
+        const start = getVal("f_start");
+        const end = getVal("f_end");
+        const explain = getVal("f_explain");
+        if (!start || !end) {
+          addFeedback.innerHTML = `<span class="ko">Il faut le début ET la fin.</span>`;
+          return;
+        }
+        item.start = start;
+        item.end = end;
+        if (explain) item.explain = explain;
+      } else if (type === "action" || type === "verite") {
+        const q = getVal("f_q");
+        const explain = getVal("f_explain");
+        if (!q) {
+          addFeedback.innerHTML = `<span class="ko">Il faut écrire une ${type === "action" ? "action" : "vérité"}.</span>`;
+          return;
+        }
+        item.q = q;
+        if (explain) item.explain = explain;
+      } else {
+        const q = getVal("f_q");
+        if (!q) {
+          addFeedback.innerHTML = `<span class="ko">Champ vide.</span>`;
+          return;
+        }
+        item.q = q;
+      }
+
+      // Stockage dans CUSTOM_BANK (pour ne pas toucher BASE_BANK)
+      const current = loadCustomBank();
+      if (!current[category]) current[category] = [];
+      current[category].push(item);
+      saveCustomBank(current);
+
+      // Rebuild BANK + UI
+      rebuildBankFromStorage();
+      renderFields(); // reset champs
+      addFeedback.innerHTML = `<span class="ok">Ajouté ✅</span>`;
+    }
+
+    function clearStored() {
+      localStorage.removeItem(STORAGE_KEY);
+      rebuildBankFromStorage();
+      renderFields();
+      addFeedback.innerHTML = `<span class="ok">Ajouts effacés ✅</span>`;
+      resetAll();
+    }
+
+    // =========================================================
+    // Events
+    // =========================================================
+    startBtn.addEventListener("click", startQuiz);
+    nextBtn.addEventListener("click", nextQuestion);
+    revealBtn.addEventListener("click", revealAnswer);
+    resetBtn.addEventListener("click", resetAll);
+
+    shuffleBtn.addEventListener("click", () => {
+      const category = catSelect.value;
+      buildDeck(category);
+      if (!deck.length) {
+        renderEmpty(category);
+        return;
+      }
+      shuffleArray(deck);
+      idx = 0;
+      renderQuestion();
+    });
+
+    addCat.addEventListener("change", () => {
+      setTypeOptionsForCategory(addCat.value);
+      renderFields();
+    });
+
+    addType.addEventListener("change", renderFields);
+    addBtn.addEventListener("click", addQuestionFromForm);
+    clearStoredBtn.addEventListener("click", clearStored);
+
+    // =========================================================
+    // Init
+    // =========================================================
+    populateCategories();
+    setTypeOptionsForCategory(addCat.value);
+    renderFields();
+    resetAll();
+  </script>
+</body>
+</html>
