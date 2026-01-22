@@ -848,30 +848,36 @@
         catSelect.appendChild(opt);
       }
     }
+function buildDeck(category) {
+  idx = -1;
+  deck = [];
 
-    function buildDeck(category) {
-      idx = -1;
-      deck = [];
+  if (category === "Action ou Vérité") {
+    const pack = BANK[category]?.[0];
+    if (!pack) return;
 
-      if (category === "Action ou Vérité") {
-        const pack = (BANK[category] && BANK[category][0]) ? BANK[category][0] : null;
-        if (!pack) return;
+    const mode = aovSelect.value;
+    const list = mode === "action" ? pack.actions : pack.truths;
 
-        const mode = aovSelect.value; // "action" ou "truth"
-        const list = mode === "action" ? (pack.actions || []) : (pack.truths || []);
+    deck = list.map(text => ({
+      category,
+      type: mode === "action" ? "aov_action" : "aov_truth",
+      q: pack.q,
+      a: text
+    }));
 
-        deck = list.map(text => ({
-          category,
-          type: mode === "action" ? "aov_action" : "aov_truth",
-          q: pack.q || "Action ou Vérité ?",
-          a: text
-        }));
-        return;
-      }
+    shuffleArray(deck);
+    return;
+  }
 
-      const list = BANK[category] ?? [];
-      deck = list.map(item => ({ ...item, category }));
-    }
+  deck = (BANK[category] || []).map(item => ({
+    ...item,
+    category
+  }));
+
+  shuffleArray(deck);
+}
+
 
     function renderEmpty(category) {
       setBadgeText(categoryTag, category);
@@ -934,12 +940,23 @@
       idx = 0;
       renderQuestion();
     }
+function nextQuestion() {
+  if (!deck.length) return;
 
-    function nextQuestion() {
-      if (!deck.length) return;
-      idx = (idx + 1) % deck.length;
-      renderQuestion();
-    }
+  // si on est à la dernière question -> stop
+  if (idx >= deck.length - 1) {
+    nextBtn.disabled = true;
+    revealBtn.disabled = true;
+    answerBox.style.display = "none";
+    questionText.textContent = "✅ Fin : toutes les questions ont été posées.";
+    hintText.textContent = "Change de catégorie ou clique Réinitialiser pour recommencer.";
+    progress.textContent = `${deck.length} / ${deck.length}`;
+    return;
+  }
+
+  idx = idx + 1;
+  renderQuestion();
+}
 
     function revealAnswer() {
       if (!deck.length || idx < 0) return;
