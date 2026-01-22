@@ -3,80 +3,348 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Quiz — Oral</title>
+  <title>LE CAPU-TCHIN</title>
   <style>
-    body { font-family: system-ui, Arial, sans-serif; margin: 24px; max-width: 980px; }
-    .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin: 16px 0; }
-    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    button, select { padding: 10px 12px; border-radius: 10px; border: 1px solid #ccc; background: #fff; }
-    button { cursor: pointer; }
-    button:hover { background: #f6f6f6; }
-    .muted { color: #666; }
-    .tag { font-size: 12px; padding: 3px 8px; border: 1px solid #ddd; border-radius: 999px; }
-    .answerBox { padding: 12px; border-radius: 10px; background: #fafafa; border: 1px dashed #ccc; display: none; }
+    :root{
+      --bg0:#fff7fb;
+      --bg1:#f2fbff;
+      --ink:#1b1b1f;
+      --muted:#6b6b75;
+      --card:#ffffffcc;
+      --stroke:#e9d7ee;
 
-    /* Couleurs par type */
-    .tag-green { background:#d9f7dc; border-color:#7bdc8a; color:#1f7a2e; }
-    .tag-orange { background:#ffe6c7; border-color:#ffb15a; color:#9a4f00; }
-    .tag-pink { background:#ffd6e7; border-color:#ff7fb0; color:#8a1d4a; }
-    .tag-turquoise { background:#c9fbf5; border-color:#41d6c3; color:#0b6a60; }
+      /* tons rose & turquoise (base) */
+      --pink:#ff4fa3;
+      --pink2:#ff7fc2;
+      --pinkSoft:#ffe1f0;
 
-    /* Optionnel: rendre aussi le typeTag comme un badge */
-    .typeBadge {
-      font-size: 12px;
-      padding: 3px 8px;
-      border: 1px solid #ddd;
+      --turq:#22c7b8;
+      --turq2:#6ee7db;
+      --turqSoft:#d8fffb;
+
+      --orange:#ff9a3d;
+      --green:#2ecf7d;
+
+      --shadow: 0 18px 45px rgba(23, 20, 33, 0.10);
+      --shadow2: 0 10px 24px rgba(23, 20, 33, 0.10);
+      --radius: 18px;
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(1100px 700px at 10% 5%, rgba(255,79,163,.22), transparent 55%),
+        radial-gradient(900px 600px at 90% 10%, rgba(34,199,184,.22), transparent 55%),
+        radial-gradient(900px 700px at 30% 95%, rgba(110,231,219,.22), transparent 55%),
+        linear-gradient(135deg, var(--bg0), var(--bg1));
+      min-height: 100vh;
+    }
+
+    .wrap{
+      max-width: 1060px;
+      margin: 26px auto 60px;
+      padding: 0 18px;
+    }
+
+    .hero{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    h1{
+      margin: 0;
+      font-size: clamp(26px, 3vw, 38px);
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+    }
+
+    .subtitle{
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .pill{
+      padding: 10px 12px;
       border-radius: 999px;
+      background: rgba(255,255,255,.65);
+      border: 1px solid rgba(255,255,255,.9);
+      box-shadow: var(--shadow2);
+      backdrop-filter: blur(10px);
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+
+    .dot{
+      width: 10px; height:10px; border-radius:999px;
+      background: linear-gradient(135deg, var(--pink), var(--turq));
+      box-shadow: 0 0 0 3px rgba(255,255,255,.65);
+    }
+
+    .card{
+      border: 1px solid rgba(255,255,255,.85);
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin: 14px 0;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .cardTitle{
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin: 0 0 10px;
+      color: rgba(27,27,31,.85);
+    }
+
+    .row{
+      display:flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items:center;
+    }
+
+    label{ font-size: 13px; color: var(--muted); }
+
+    select, button{
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(27,27,31,.10);
+      background: rgba(255,255,255,.85);
+      box-shadow: 0 6px 16px rgba(27,27,31,.08);
+      font-size: 15px;
+      transition: transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease, opacity .12s ease;
+    }
+
+    select{
+      padding-right: 36px;
+      cursor: pointer;
+    }
+
+    button{
+      cursor:pointer;
+      font-weight: 650;
+      letter-spacing: -0.01em;
+    }
+
+    button:hover:not(:disabled){
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px rgba(27,27,31,.12);
+    }
+    button:active:not(:disabled){
+      transform: translateY(0px) scale(.99);
+    }
+    button:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      box-shadow: none;
+    }
+
+    .btnPrimary{
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.4);
+      background: linear-gradient(135deg, var(--pink), var(--turq));
+      box-shadow: 0 14px 30px rgba(255,79,163,.18), 0 14px 30px rgba(34,199,184,.14);
+    }
+    .btnPrimary:hover:not(:disabled){
+      box-shadow: 0 18px 40px rgba(255,79,163,.22), 0 18px 40px rgba(34,199,184,.18);
+    }
+
+    .btnSoft{
+      background: rgba(255,255,255,.75);
+    }
+
+    .btnDanger{
+      border-color: rgba(255,79,163,.25);
+      background: linear-gradient(180deg, rgba(255,79,163,.12), rgba(255,255,255,.85));
+    }
+
+    .progress{
+      margin-left:auto;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(27,27,31,.08);
+      background: rgba(255,255,255,.7);
+      color: rgba(27,27,31,.70);
+      font-weight: 650;
+      letter-spacing: -.01em;
+    }
+
+    /* Badges */
+    .tag, .typeBadge{
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(27,27,31,.10);
+      background: rgba(255,255,255,.65);
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .tag .miniDot, .typeBadge .miniDot{
+      width: 8px; height: 8px; border-radius: 999px;
+      background: linear-gradient(135deg, var(--pink), var(--turq));
+      box-shadow: 0 0 0 2px rgba(255,255,255,.7);
+    }
+    .muted{ color: var(--muted); }
+
+    /* Zone question */
+    #questionCard{
+      position: relative;
+      overflow: hidden;
+      padding: 22px;
+      transition: background .25s ease, border-color .25s ease, transform .25s ease;
+    }
+
+    #questionCard::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background:
+        radial-gradient(500px 250px at 10% 10%, rgba(255,255,255,.75), transparent 60%),
+        radial-gradient(600px 280px at 90% 10%, rgba(255,255,255,.55), transparent 65%),
+        radial-gradient(700px 340px at 30% 90%, rgba(255,255,255,.55), transparent 65%);
+      opacity: .55;
+      pointer-events:none;
+    }
+
+    #questionCard > *{ position: relative; }
+
+    #questionText{
+      margin: 12px 0 8px;
+      font-size: clamp(22px, 2.3vw, 32px);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+
+    #hintText{
+      margin: 0 0 16px;
+      font-size: 14px;
+      color: rgba(27,27,31,.65);
+    }
+
+    .answerBox{
+      margin-top: 14px;
+      padding: 14px 14px;
+      border-radius: 16px;
+      border: 1px dashed rgba(27,27,31,.18);
+      background: rgba(255,255,255,.70);
+      display: none;
+      animation: pop .18s ease;
+    }
+
+    @keyframes pop{
+      from{ transform: translateY(6px); opacity:0; }
+      to{ transform: translateY(0); opacity:1; }
+    }
+
+    /* Couleurs badges par type */
+    .tag-green { background:#d9f7dc; border-color:#7bdc8a; color:#1f7a2e; }
+    .tag-orange{ background:#ffe6c7; border-color:#ffb15a; color:#9a4f00; }
+    .tag-pink  { background:#ffd6e7; border-color:#ff7fb0; color:#8a1d4a; }
+    .tag-turquoise{ background:#c9fbf5; border-color:#41d6c3; color:#0b6a60; }
+
+    /* Couleurs du GROS CADRE (question) */
+    .card-green{
+      background: linear-gradient(135deg, rgba(46,207,125,.12), rgba(255,255,255,.72));
+      border-color: rgba(46,207,125,.35);
+    }
+    .card-orange{
+      background: linear-gradient(135deg, rgba(255,154,61,.16), rgba(255,255,255,.72));
+      border-color: rgba(255,154,61,.40);
+    }
+    .card-pink{
+      background: linear-gradient(135deg, rgba(255,79,163,.18), rgba(255,255,255,.72));
+      border-color: rgba(255,79,163,.45);
+    }
+    .card-turquoise{
+      background: linear-gradient(135deg, rgba(34,199,184,.18), rgba(255,255,255,.72));
+      border-color: rgba(34,199,184,.45);
+    }
+
+    /* petit effet "vivant" */
+    .glow{
+      box-shadow:
+        0 18px 45px rgba(23, 20, 33, 0.10),
+        0 0 0 1px rgba(255,255,255,.6) inset;
+    }
+
+    /* Responsive petits écrans */
+    @media (max-width: 520px){
+      select, button{ width: 100%; }
+      .progress{ margin-left: 0; width: 100%; justify-content:center; display:flex; }
     }
   </style>
 </head>
 <body>
-
-  <h1>Quiz (réponses à l’oral)</h1>
-  <p class="muted">Choisis une catégorie → une question s’affiche → tu réponds à l’oral → tu peux révéler la réponse.</p>
-
-  <!-- ===================== -->
-  <!-- CONTROLES QUIZ -->
-  <!-- ===================== -->
-  <div class="card">
-    <div class="row">
-      <label class="muted" for="catSelect">Catégorie :</label>
-      <select id="catSelect"></select>
-      <button id="startBtn">Démarrer</button>
-      <button id="shuffleBtn" title="Mélanger l'ordre des questions">Mélanger</button>
-
-      <span style="margin-left:auto" class="muted" id="progress">—</span>
-    </div>
-  </div>
-
-  <!-- ===================== -->
-  <!-- AFFICHAGE QUESTION -->
-  <!-- ===================== -->
-  <div class="card">
-    <div class="row">
-      <span class="tag" id="categoryTag">—</span>
-      <span class="typeBadge muted" id="typeTag">—</span>
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <h1> Le Capu-Tchin </h1>
+        <p class="subtitle">Choisis une catégorie → une question s’affiche → tu réponds à l’oral → tu peux révéler la réponse.</p>
+      </div>
+      <div class="pill" title="Thème rose & turquoise">
+        <span class="dot"></span>
+        <span style="font-weight:700; color: rgba(27,27,31,.75);">Rose × Turquoise</span>
+      </div>
     </div>
 
-    <h2 id="questionText">Choisis une catégorie puis clique “Démarrer”.</h2>
-    <p class="muted" id="hintText"></p>
+    <!-- ===================== -->
+    <!-- CONTROLES QUIZ -->
+    <!-- ===================== -->
+    <div class="card glow" id="controlsCard">
+      <div class="row">
+        <label for="catSelect">Catégorie :</label>
+        <select id="catSelect"></select>
 
-    <div class="row">
-      <button id="revealBtn" disabled>Révéler la réponse</button>
-      <button id="nextBtn" disabled>Question suivante</button>
-      <button id="resetBtn">Réinitialiser</button>
+        <!-- AOV mode injected here -->
+
+        <button class="btnPrimary" id="startBtn">Démarrer</button>
+        <button class="btnSoft" id="shuffleBtn" title="Mélanger l'ordre des questions">Mélanger</button>
+
+        <span class="progress" id="progress">—</span>
+      </div>
     </div>
 
-    <div class="answerBox" id="answerBox">
-      <strong>Réponse :</strong>
-      <div id="answerText" style="margin-top:6px"></div>
-      <div class="muted" id="explainText" style="margin-top:6px"></div>
+    <!-- ===================== -->
+    <!-- AFFICHAGE QUESTION -->
+    <!-- ===================== -->
+    <div class="card glow" id="questionCard">
+      <div class="row" style="margin-bottom: 4px;">
+        <span class="tag" id="categoryTag"><span class="miniDot"></span><span>—</span></span>
+        <span class="typeBadge muted" id="typeTag"><span class="miniDot"></span><span>—</span></span>
+      </div>
+
+      <h2 id="questionText">Choisis une catégorie puis clique “Démarrer”.</h2>
+      <p id="hintText"></p>
+
+      <div class="row">
+        <button class="btnPrimary" id="revealBtn" disabled>Révéler la réponse</button>
+        <button class="btnSoft" id="nextBtn" disabled>Question suivante</button>
+        <button class="btnDanger" id="resetBtn">Réinitialiser</button>
+      </div>
+
+      <div class="answerBox" id="answerBox">
+        <strong>Réponse :</strong>
+        <div id="answerText" style="margin-top:8px; font-size: 18px; font-weight: 750;"></div>
+        <div class="muted" id="explainText" style="margin-top:8px"></div>
+      </div>
     </div>
   </div>
 
   <script>
     // =========================================================
-    // Banque de questions
+    // Banque de questions (la tienne, inchangée)
     // =========================================================
     const BANK = {
       "Culture générale": [
@@ -298,7 +566,6 @@
         { type:"classic", q:"Vrai ou faux : le moustique est l’animal qui cause le plus de morts humaines chaque année.", a:"Vrai" }
       ],
 
-
       "Expressions": [
         { type:"expression", start:"Qui vole un œuf", end:"vole un bœuf" },
         { type:"expression", start:"Pierre qui roule", end:"n’amasse pas mousse" },
@@ -397,29 +664,28 @@
           type: "aov",
           q: "Action ou Vérité ?",
           actions: [
-          "Fais 10 pompes",
-          "Parle uniquement en rimes pendant 2 tours",
-          "Fais deviner un film uniquement avec des mimes",
-          "Lire le dernier message envoyé sur ton téléphone",
-          "Bois un short en faisant le bruit d'un animal au choix",
-          "Imite un autre joueur pendant 30sec",
-          "Parle avec un accent choisit par les autres pendant 3 tours",
-          "Ouvre la fenêtre et cris « capu je t'aime »",
-          "Fais un mini défilé avec une pause ridicule",
-          "Envoie une photo avec un filtre à une personne au hasard choisi par les autres",
-          "Répète une phrase donnée en enlevant un lettre choisis par les autres",
-          "Fais un karaoke pendant 30 sec",
-          "Vous 5 gorgées avec ton voisins de gauche",
-          "Raconte une blague anecdotes sur personne tu tu nous cul sec",
-          "Laisser quelqu'un choisir ta photo de profil pendant 10 minutes",
-          "Faire un compliment sincère à chaque joueur",
-          "Raconter une histoire inventée en 30 secondes",
-          "Bois une gorgée à chaque fois que quelqu'un rit pendant 1 minute",
-          "Bois autant de gorgées que de personnes dans la pièce",
-          "Regarde quelqu'un droit dans les yeux sans parler pendant 1 minute",
-          "Bois sans utiliser tes mains",
-          "Bois une gorgée pour chaque ex que tu as eu"
-
+            "Fais 10 pompes",
+            "Parle uniquement en rimes pendant 2 tours",
+            "Fais deviner un film uniquement avec des mimes",
+            "Lire le dernier message envoyé sur ton téléphone",
+            "Bois un short en faisant le bruit d'un animal au choix",
+            "Imite un autre joueur pendant 30sec",
+            "Parle avec un accent choisit par les autres pendant 3 tours",
+            "Ouvre la fenêtre et cris « capu je t'aime »",
+            "Fais un mini défilé avec une pause ridicule",
+            "Envoie une photo avec un filtre à une personne au hasard choisi par les autres",
+            "Répète une phrase donnée en enlevant un lettre choisis par les autres",
+            "Fais un karaoke pendant 30 sec",
+            "Vous 5 gorgées avec ton voisins de gauche",
+            "Raconte une blague anecdotes sur personne tu tu nous cul sec",
+            "Laisser quelqu'un choisir ta photo de profil pendant 10 minutes",
+            "Faire un compliment sincère à chaque joueur",
+            "Raconter une histoire inventée en 30 secondes",
+            "Bois une gorgée à chaque fois que quelqu'un rit pendant 1 minute",
+            "Bois autant de gorgées que de personnes dans la pièce",
+            "Regarde quelqu'un droit dans les yeux sans parler pendant 1 minute",
+            "Bois sans utiliser tes mains",
+            "Bois une gorgée pour chaque ex que tu as eu"
           ],
           truths: [
             "Quand as tu pleuré pour la dernière fois ?",
@@ -454,7 +720,6 @@
             "As tu déjà fais semblant d'aimer quelqu'un alors que ce n'était pas le cas",
             "As tu déjà couché avec quelqu'un sur un coup de tête",
             "Quelle est la chose la plus folle que tu es fait pour séduire quelqu'un",
-            
             "quel est ton plus gros fantasme",
             "As tu déjà ri à un moment totalement inapproprié si oui lequel",
             "Quel est le mensonge le plus récent que tu aies raconté",
@@ -462,7 +727,6 @@
             "As tu une remarque à faire à la personne à ta droite",
             "As tu déjà menti pour ne pas sortir avec quelqu'un",
             "Qu'elle est la dernière personne sur laquelle tu aies fantasmé"
-
           ]
         }
       ]
@@ -471,33 +735,41 @@
     // =========================================================
     // UI elements
     // =========================================================
-    const catSelect = document.getElementById("catSelect");
-    const startBtn = document.getElementById("startBtn");
-    const shuffleBtn = document.getElementById("shuffleBtn");
-    const revealBtn = document.getElementById("revealBtn");
-    const nextBtn = document.getElementById("nextBtn");
-    const resetBtn = document.getElementById("resetBtn");
+    const catSelect   = document.getElementById("catSelect");
+    const startBtn    = document.getElementById("startBtn");
+    const shuffleBtn  = document.getElementById("shuffleBtn");
+    const revealBtn   = document.getElementById("revealBtn");
+    const nextBtn     = document.getElementById("nextBtn");
+    const resetBtn    = document.getElementById("resetBtn");
 
-    const categoryTag = document.getElementById("categoryTag");
-    const typeTag = document.getElementById("typeTag");
-    const progress = document.getElementById("progress");
+    const questionCard = document.getElementById("questionCard");
+
+    const categoryTag  = document.getElementById("categoryTag");
+    const typeTag      = document.getElementById("typeTag");
+    const progress     = document.getElementById("progress");
     const questionText = document.getElementById("questionText");
-    const hintText = document.getElementById("hintText");
+    const hintText     = document.getElementById("hintText");
 
-    const answerBox = document.getElementById("answerBox");
-    const answerText = document.getElementById("answerText");
-    const explainText = document.getElementById("explainText");
+    const answerBox    = document.getElementById("answerBox");
+    const answerText   = document.getElementById("answerText");
+    const explainText  = document.getElementById("explainText");
+
+    // Petits helpers pour mettre le texte dans les badges (car on a un miniDot + span)
+    function setBadgeText(el, txt){
+      const span = el.querySelector("span:last-child");
+      if(span) span.textContent = txt;
+      else el.textContent = txt;
+    }
 
     // =========================================================
     // AJOUT UI : choix Action / Vérité (invisible sauf AOV)
     // =========================================================
-    const controlsCardRow = document.querySelector(".card .row"); // la 1ère card = contrôles
+    const controlsRow = document.querySelector("#controlsCard .row");
     const aovWrap = document.createElement("div");
     aovWrap.className = "row";
     aovWrap.style.gap = "10px";
 
     const aovLabel = document.createElement("label");
-    aovLabel.className = "muted";
     aovLabel.textContent = "Mode A/V :";
 
     const aovSelect = document.createElement("select");
@@ -510,8 +782,8 @@
     aovWrap.appendChild(aovLabel);
     aovWrap.appendChild(aovSelect);
 
-    // on l’insère juste après le select catégorie
-    controlsCardRow.insertBefore(aovWrap, startBtn);
+    // insère juste après le select catégorie
+    controlsRow.insertBefore(aovWrap, startBtn);
     aovWrap.style.display = "none";
 
     // =========================================================
@@ -529,19 +801,25 @@
     }
 
     function applyColorsForType(t) {
+      // reset tags
       categoryTag.classList.remove("tag-green","tag-orange","tag-pink","tag-turquoise");
-      typeTag.classList.remove("tag-green","tag-orange","tag-pink","tag-turquoise");
-      typeTag.classList.remove("muted");
+      typeTag.classList.remove("tag-green","tag-orange","tag-pink","tag-turquoise","muted");
 
-      let cls = "";
-      if (t === "classic") cls = "tag-green";
-      else if (t === "expression") cls = "tag-orange";
-      else if (t === "aov_action") cls = "tag-pink";
-      else if (t === "aov_truth") cls = "tag-turquoise";
+      // reset card
+      questionCard.classList.remove("card-green","card-orange","card-pink","card-turquoise");
 
-      if (cls) {
-        categoryTag.classList.add(cls);
-        typeTag.classList.add(cls);
+      let tagCls = "";
+      let cardCls = "";
+
+      if (t === "classic") { tagCls = "tag-green"; cardCls = "card-green"; }
+      else if (t === "expression") { tagCls = "tag-orange"; cardCls = "card-orange"; }
+      else if (t === "aov_action") { tagCls = "tag-pink"; cardCls = "card-pink"; }
+      else if (t === "aov_truth") { tagCls = "tag-turquoise"; cardCls = "card-turquoise"; }
+
+      if (tagCls) {
+        categoryTag.classList.add(tagCls);
+        typeTag.classList.add(tagCls);
+        questionCard.classList.add(cardCls);
       } else {
         typeTag.classList.add("muted");
       }
@@ -596,9 +874,9 @@
     }
 
     function renderEmpty(category) {
-      categoryTag.textContent = category;
-      typeTag.textContent = "—";
-      applyColorsForType(""); // reset couleurs
+      setBadgeText(categoryTag, category);
+      setBadgeText(typeTag, "—");
+      applyColorsForType("");
       progress.textContent = `0 / 0`;
       questionText.textContent = `Aucune question pour “${category}”.`;
       hintText.textContent = "";
@@ -610,8 +888,8 @@
       if (!deck.length || idx < 0) return;
       const q = deck[idx];
 
-      categoryTag.textContent = q.category;
-      typeTag.textContent = typeLabel(q.type);
+      setBadgeText(categoryTag, q.category);
+      setBadgeText(typeTag, typeLabel(q.type));
       applyColorsForType(q.type);
 
       progress.textContent = `${idx + 1} / ${deck.length}`;
@@ -631,11 +909,11 @@
       } else if (q.type === "aov_action") {
         questionText.textContent = `Action : ${q.a ?? "(action manquante)"}`;
         hintText.textContent = "Fais l’action.";
-        revealBtn.disabled = true; // déjà affiché
+        revealBtn.disabled = true;
       } else if (q.type === "aov_truth") {
         questionText.textContent = `Vérité : ${q.a ?? "(vérité manquante)"}`;
         hintText.textContent = "Réponds à l’oral.";
-        revealBtn.disabled = true; // déjà affiché
+        revealBtn.disabled = true;
       } else {
         questionText.textContent = "Type inconnu.";
         hintText.textContent = "";
@@ -686,8 +964,8 @@
       deck = [];
       idx = -1;
 
-      categoryTag.textContent = "—";
-      typeTag.textContent = "—";
+      setBadgeText(categoryTag, "—");
+      setBadgeText(typeTag, "—");
       progress.textContent = "—";
       questionText.textContent = "Choisis une catégorie puis clique “Démarrer”.";
       hintText.textContent = "";
@@ -698,6 +976,8 @@
       categoryTag.classList.remove("tag-green","tag-orange","tag-pink","tag-turquoise");
       typeTag.classList.remove("tag-green","tag-orange","tag-pink","tag-turquoise");
       typeTag.classList.add("muted");
+
+      questionCard.classList.remove("card-green","card-orange","card-pink","card-turquoise");
     }
 
     function updateAovUI() {
