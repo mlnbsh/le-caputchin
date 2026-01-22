@@ -3,62 +3,37 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Quiz — Oral (Catégories + Ajout)</title>
+  <title>Quiz — Oral</title>
   <style>
     body { font-family: system-ui, Arial, sans-serif; margin: 24px; max-width: 980px; }
     .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin: 16px 0; }
     .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    button, select, input, textarea {
-      padding: 10px 12px; border-radius: 10px; border: 1px solid #ccc; background: #fff;
-    }
+    button, select { padding: 10px 12px; border-radius: 10px; border: 1px solid #ccc; background: #fff; }
     button { cursor: pointer; }
     button:hover { background: #f6f6f6; }
-    textarea { width: min(820px, 100%); min-height: 72px; resize: vertical; }
-    input { width: min(820px, 100%); }
     .muted { color: #666; }
     .tag { font-size: 12px; padding: 3px 8px; border: 1px solid #ddd; border-radius: 999px; }
     .answerBox { padding: 12px; border-radius: 10px; background: #fafafa; border: 1px dashed #ccc; display: none; }
-    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
-    .ok { color: #0a7a2f; font-weight: 600; }
-    .ko { color: #b00020; font-weight: 600; }
-    .pill { font-size: 12px; padding: 2px 8px; border: 1px solid #ddd; border-radius: 999px; }
-    .spacer { height: 6px; }
+
+    /* Couleurs par type */
+    .tag-green { background:#d9f7dc; border-color:#7bdc8a; color:#1f7a2e; }
+    .tag-orange { background:#ffe6c7; border-color:#ffb15a; color:#9a4f00; }
+    .tag-pink { background:#ffd6e7; border-color:#ff7fb0; color:#8a1d4a; }
+    .tag-turquoise { background:#c9fbf5; border-color:#41d6c3; color:#0b6a60; }
+
+    /* Optionnel: rendre aussi le typeTag comme un badge */
+    .typeBadge {
+      font-size: 12px;
+      padding: 3px 8px;
+      border: 1px solid #ddd;
+      border-radius: 999px;
+    }
   </style>
 </head>
 <body>
 
   <h1>Quiz (réponses à l’oral)</h1>
   <p class="muted">Choisis une catégorie → une question s’affiche → tu réponds à l’oral → tu peux révéler la réponse.</p>
-
-  <!-- ===================== -->
-  <!-- AJOUT DE QUESTIONS -->
-  <!-- ===================== -->
-  <div class="card">
-    <h2>Ajouter une question</h2>
-    <p class="muted">Tes ajouts sont sauvegardés sur cet appareil (localStorage).</p>
-
-    <div class="row">
-      <label class="muted" for="addCat">Catégorie :</label>
-      <select id="addCat"></select>
-
-      <label class="muted" for="addType">Type :</label>
-      <select id="addType"></select>
-
-      <span class="pill" id="countPill">—</span>
-    </div>
-
-    <div class="spacer"></div>
-
-    <!-- Champs variables -->
-    <div id="fields"></div>
-
-    <div class="row" style="margin-top:10px">
-      <button id="addBtn">Ajouter</button>
-      <button id="clearStoredBtn" title="Supprime uniquement les questions ajoutées via le formulaire">Effacer mes ajouts</button>
-      <span id="addFeedback" class="muted"></span>
-    </div>
-  </div>
 
   <!-- ===================== -->
   <!-- CONTROLES QUIZ -->
@@ -80,7 +55,7 @@
   <div class="card">
     <div class="row">
       <span class="tag" id="categoryTag">—</span>
-      <span class="muted" id="typeTag">—</span>
+      <span class="typeBadge muted" id="typeTag">—</span>
     </div>
 
     <h2 id="questionText">Choisis une catégorie puis clique “Démarrer”.</h2>
@@ -101,58 +76,400 @@
 
   <script>
     // =========================================================
-    // Banque "de base" (tu peux en laisser vide, et ajouter via le formulaire)
+    // Banque de questions
     // =========================================================
-    const BASE_BANK = {
+    const BANK = {
       "Culture générale": [
-        // { type:"classic", q:"...", a:"...", explain:"(optionnel)" },
+        { type:"classic", q:"Quelle est la capitale de la France ?", a:"Paris" },
+        { type:"classic", q:"Quelle est la capitale de l’Espagne ?", a:"Madrid" },
+        { type:"classic", q:"Quelle est la capitale de l’Italie ?", a:"Rome" },
+        { type:"classic", q:"Quelle est la capitale de l’Allemagne ?", a:"Berlin" },
+        { type:"classic", q:"Quelle est la capitale du Portugal ?", a:"Lisbonne" },
+        { type:"classic", q:"Quelle est la capitale de la Belgique ?", a:"Bruxelles" },
+        { type:"classic", q:"Quelle est la capitale des Pays-Bas ?", a:"Amsterdam" },
+        { type:"classic", q:"Quelle est la capitale de la Suisse ?", a:"Berne" },
+        { type:"classic", q:"Quelle est la capitale de l’Autriche ?", a:"Vienne" },
+        { type:"classic", q:"Quelle est la capitale de la Grèce ?", a:"Athènes" },
+        { type:"classic", q:"Quelle est la capitale de la Suède ?", a:"Stockholm" },
+        { type:"classic", q:"Quelle est la capitale de la Norvège ?", a:"Oslo" },
+        { type:"classic", q:"Quelle est la capitale du Danemark ?", a:"Copenhague" },
+        { type:"classic", q:"Quelle est la capitale de la Finlande ?", a:"Helsinki" },
+        { type:"classic", q:"Quelle est la capitale de l’Irlande ?", a:"Dublin" },
+        { type:"classic", q:"Quelle est la capitale de la Pologne ?", a:"Varsovie" },
+        { type:"classic", q:"Quelle est la capitale de la République tchèque ?", a:"Prague" },
+        { type:"classic", q:"Quelle est la capitale de la Hongrie ?", a:"Budapest" },
+        { type:"classic", q:"Quelle est la capitale de la Roumanie ?", a:"Bucarest" },
+        { type:"classic", q:"Quelle est la capitale de la Bulgarie ?", a:"Sofia" },
+        { type:"classic", q:"Quelle est la capitale de la Croatie ?", a:"Zagreb" },
+        { type:"classic", q:"Quelle est la capitale de la Serbie ?", a:"Belgrade" },
+        { type:"classic", q:"Quelle est la capitale de la Slovénie ?", a:"Ljubljana" },
+        { type:"classic", q:"Quelle est la capitale de la Slovaquie ?", a:"Bratislava" },
+        { type:"classic", q:"Quelle est la capitale de l’Estonie ?", a:"Tallinn" },
+        { type:"classic", q:"Quelle est la capitale de la Lettonie ?", a:"Riga" },
+        { type:"classic", q:"Quelle est la capitale de la Lituanie ?", a:"Vilnius" },
+        { type:"classic", q:"Quelle est la capitale de l’Islande ?", a:"Reykjavik" },
+        { type:"classic", q:"Quelle est la capitale de l’Ukraine ?", a:"Kyiv" },
+        { type:"classic", q:"Quelle est la capitale de la Biélorussie ?", a:"Minsk" },
+
+        { type:"classic", q:"Quelle est la capitale du Canada ?", a:"Ottawa" },
+        { type:"classic", q:"Quelle est la capitale du Brésil ?", a:"Brasília" },
+        { type:"classic", q:"Quelle est la capitale du Japon ?", a:"Tokyo" },
+        { type:"classic", q:"Quelle est la capitale de la Chine ?", a:"Pékin" },
+        { type:"classic", q:"Quelle est la capitale de l’Australie ?", a:"Canberra" },
+        { type:"classic", q:"Quelle est la capitale du Maroc ?", a:"Rabat" },
+        { type:"classic", q:"Quelle est la capitale de l’Égypte ?", a:"Le Caire" },
+        { type:"classic", q:"Quelle est la capitale du Mexique ?", a:"Mexico" },
+        { type:"classic", q:"Quelle est la capitale de l’Argentine ?", a:"Buenos Aires" },
+        { type:"classic", q:"Quelle est la capitale de l’Afrique du Sud ?", a:"Pretoria" },
+
+        { type:"classic", q:"Quelle est la capitale du Monténégro ?", a:"Podgorica" },
+        { type:"classic", q:"Quelle est la capitale de la Macédoine du Nord ?", a:"Skopje" },
+
+        { type:"classic", q:"Sur quel continent se trouve le Belize ?", a:"Amérique centrale" },
+        { type:"classic", q:"Sur quel continent se situe le Suriname ?", a:"Amérique du Sud" },
+        { type:"classic", q:"Sur quel continent se trouve le Monténégro ?", a:"Europe" },
+        { type:"classic", q:"Sur quel continent se situe la Namibie ?", a:"Afrique" },
+        { type:"classic", q:"Sur quel continent se trouve le Paraguay ?", a:"Amérique du Sud" },
+        { type:"classic", q:"Sur quel continent se situe la Zambie ?", a:"Afrique" },
+        { type:"classic", q:"Sur quel continent se trouve le Bhoutan ?", a:"Asie" },
+        { type:"classic", q:"Sur quel continent se situe le Cambodge ?", a:"Asie" },
+        { type:"classic", q:"Sur quel continent se trouve la Moldavie ?", a:"Europe" },
+        { type:"classic", q:"Sur quel continent se situe le Botswana ?", a:"Afrique" },
+        { type:"classic", q:"Sur quel continent se trouve le Laos ?", a:"Asie" },
+        { type:"classic", q:"Sur quel continent se situe la Croatie ?", a:"Europe" },
+        { type:"classic", q:"Sur quel continent se trouve le Guatemala ?", a:"Amérique centrale" },
+        { type:"classic", q:"Sur quel continent se situe le Rwanda ?", a:"Afrique" },
+        { type:"classic", q:"Sur quel continent se trouve la Slovaquie ?", a:"Europe" },
+        { type:"classic", q:"Sur quel continent se situe le Honduras ?", a:"Amérique centrale" },
+        { type:"classic", q:"Sur quel continent se trouve la Bolivie ?", a:"Amérique du Sud" },
+        { type:"classic", q:"Sur quel continent se situe le Népal ?", a:"Asie" },
+        { type:"classic", q:"Sur quel continent se trouve la Serbie ?", a:"Europe" },
+        { type:"classic", q:"Sur quel continent se situe le Gabon ?", a:"Afrique" },
+
+        { type:"classic", q:"Quelle est la planète la plus proche du Soleil ?", a:"Mercure" },
+        { type:"classic", q:"Quelle est la plus grande planète du système solaire ?", a:"Jupiter" },
+        { type:"classic", q:"Quelle planète est surnommée la planète rouge ?", a:"Mars" },
+        { type:"classic", q:"Quelle planète possède des anneaux visibles ?", a:"Saturne" },
+        { type:"classic", q:"Quelle planète a un jour plus long que son année ?", a:"Vénus" },
+        { type:"classic", q:"Quelle planète est la plus éloignée du Soleil ?", a:"Neptune" },
+        { type:"classic", q:"Quelle planète possède la Grande Tache Rouge ?", a:"Jupiter" },
+        { type:"classic", q:"Quelle planète est la plus froide du système solaire ?", a:"Uranus" },
+        { type:"classic", q:"Quelle planète n’est plus considérée comme une planète officielle ?", a:"Pluton" },
+        { type:"classic", q:"Quelle planète est facilement visible à l’œil nu le soir ?", a:"Vénus" },
+
+        { type:"classic", q:"Quel est le plus grand organe du corps humain ?", a:"La peau" },
+        { type:"classic", q:"Combien d’os possède le corps humain adulte ?", a:"206" },
+        { type:"classic", q:"Quel organe est responsable de la circulation du sang ?", a:"Le cœur" },
+        { type:"classic", q:"Dans quelle partie du corps se trouve le fémur ?", a:"Dans la cuisse" },
+        { type:"classic", q:"Quels organes permettent de respirer ?", a:"Les poumons" },
+        { type:"classic", q:"Quel organe contrôle l’ensemble du corps humain ?", a:"Le cerveau" },
+
+        { type:"classic", q:"Quel organe sert principalement à digérer les aliments ?\nA) Le cœur\nB) L’estomac\nC) Les poumons", a:"B" },
+        { type:"classic", q:"Combien de dents possède normalement un adulte ?\nA) 28\nB) 30\nC) 32", a:"C" },
+        { type:"classic", q:"Quel organe produit l’insuline ?\nA) Le foie\nB) Le pancréas\nC) Les reins", a:"B" },
+        { type:"classic", q:"Quel est le rôle principal des globules rouges ?\nA) Défendre le corps\nB) Transporter l’oxygène\nC) Digérer les aliments", a:"B" },
+
+        { type:"classic", q:"Qui est le pilote monégasque actuellement en Formule 1 chez Ferrari ?", a:"Charles Leclerc" },
+        { type:"classic", q:"Quelle écurie est historiquement la plus titrée en Formule 1 ?", a:"Ferrari" },
+        { type:"classic", q:"Quel pilote détient sept titres de champion du monde de Formule 1 ?", a:"Michael Schumacher et Lewis Hamilton" },
+        { type:"classic", q:"En Formule 1, que signifie une pole position ?", a:"Partir en première position sur la grille" },
+        { type:"classic", q:"Quel pilote néerlandais a remporté plusieurs titres récents en Formule 1 ?", a:"Max Verstappen" },
+        { type:"classic", q:"Combien de points marque le vainqueur d’un Grand Prix de Formule 1 ?", a:"25 points" },
+
+        { type:"classic", q:"Quel joueur français a remporté la NBA avec les San Antonio Spurs ?", a:"Tony Parker" },
+        { type:"classic", q:"Quel sport est associé au tournoi de Wimbledon ?", a:"Le tennis" },
+        { type:"classic", q:"Quel pays domine historiquement le rugby international ?", a:"La Nouvelle-Zélande" },
+        { type:"classic", q:"Quel sport est associé au Tour de France ?", a:"Le cyclisme" },
+        { type:"classic", q:"Quel sport se pratique sur un ring ?", a:"La boxe" },
+        { type:"classic", q:"Quel sport utilise un volant ?", a:"Le badminton" },
+        { type:"classic", q:"Quel pays a inventé le judo ?", a:"Le Japon" },
+        { type:"classic", q:"Quel sport est associé au Super Bowl ?", a:"Le football américain" },
+        { type:"classic", q:"Quel sport est pratiqué par Novak Djokovic ?", a:"Le tennis" },
+        { type:"classic", q:"Quel sport est au cœur des Jeux Olympiques d’hiver ?", a:"Le ski" },
+        { type:"classic", q:"Quel pays a remporté la Coupe du monde de football en 2018 ?", a:"La France" },
+        { type:"classic", q:"Qui est le meilleur buteur de l’histoire de l’équipe de France de football ?", a:"Olivier Giroud" },
+        { type:"classic", q:"Quel club a remporté le plus de Ligues des Champions ?", a:"Le Real Madrid" },
+        { type:"classic", q:"Quel joueur est surnommé « La Pulga » ?", a:"Lionel Messi" },
+        { type:"classic", q:"Dans quel pays est né le football moderne ?", a:"L’Angleterre" },
+
+        { type:"classic", q:"Quelle entreprise Elon Musk a-t-il fondée pour explorer l’espace ?", a:"SpaceX" },
+        { type:"classic", q:"Quelle innovation majeure Steve Jobs a-t-il présentée en 2007 ?", a:"L’iPhone" },
+        { type:"classic", q:"Quelle entreprise a révolutionné le commerce en ligne mondial ?", a:"Amazon" },
+        { type:"classic", q:"Quel entrepreneur est à l’origine de Microsoft ?", a:"Bill Gates" },
+        { type:"classic", q:"Qui a créé Facebook ?", a:"Mark Zuckerberg" },
+        { type:"classic", q:"Quelle entreprise est à l’origine du système Android ?", a:"Google" },
+        { type:"classic", q:"Qui a créé Apple ?", a:"Steve Jobs, Steve Wozniak et Ronald Wayne" },
+        { type:"classic", q:"Quelle entreprise française est leader mondial du luxe ?", a:"LVMH" },
+        { type:"classic", q:"qui a découvert la loi de la gravité ?", a:"Isaac Newton" },
+        { type:"classic", q:"Quelle est le nom de la mission américaine pour aller sur la lune en 1969 ?", a:"Appolo 11" },
+        { type:"classic", q:"quel président américain a aboli l'esclavage", a:"abraham lincoln" },
+        { type:"classic", q:"quelle était la première ethnie chinoise?", a:"hans" },
+        { type:"classic", q:"Quel traité a mis fin a la première guerre mondiale?", a:"le traité de Versailles" },
+        { type:"classic", q:"Quel pharaon est célèbre pour sa tombe retrouvée intacte?", a:"Toutankhamon" },
+        { type:"classic", q:"Qui a développer la théorie de la relativité?", a:"albert Einstein" },
+        { type:"classic", q:"Qui a composé la flute enchanté?", a:"Mozart" },
+        { type:"classic", q:"Combien de discipline compte le décathlon?", a:"10" },
+        { type:"classic", q:"Combien y a t'il de nage en natation sportive ?", a:"4" },
+        { type:"classic", q:"En quelle année on eu lieu les premier JO moderne?", a:"1896" },
+        { type:"classic", q:"Combien de mètre fait une longueur dans une piscine semi-olympique?", a:"25" },
+        { type:"classic", q:"En natation que signifie NL dans les compétitions?", a:"nage libre" },
+        { type:"classic", q:"Quel Pays est le plus célèbre pour son whyskey et son scotch?", a:"L'écosse" },
+        { type:"classic", q:"Quels sont les ingrédients d'un sex on the beach?", a:"vodka,liqueur de pêche,jus d'orange et de crambwerry" },
+        { type:"classic", q:"Quel est le nom chimique de l'alcool que l'on boit?", a:"l'éthanol" },
+        { type:"classic", q:"cite 3 films possédants une bande son hans Zimmer?", a:"interstellar,inception,gladiator,pirates des caraibes,blade runner2049,the darknight" },
+        { type:"classic", q:"donne nous 5 présidents français ?", a:"hollande,macron,chirac,de gaule,sarkozy,mitterand,pompidou,giscard'eistaing" },
+
+        { type:"classic", q:"Quel gaz est indispensable à la respiration humaine ?", a:"L’oxygène" },
+        { type:"classic", q:"Quelle plante est utilisée pour produire le chocolat ?", a:"Le cacaoyer" },
+        { type:"classic", q:"Quelle planète est surnommée la planète bleue ?", a:"La Terre" },
+        { type:"classic", q:"Quelle énergie provient du Soleil ?", a:"L’énergie solaire" },
+        { type:"classic", q:"Quelle plante est connue pour ses propriétés apaisantes ?", a:"La camomille" },
+        { type:"classic", q:"Quel est l’état de l’eau à 0 °C ?", a:"Solide (glace)" },
+        { type:"classic", q:"Quelle plante produit le café ?", a:"Le caféier" },
+        { type:"classic", q:"Quelle science étudie les plantes ?", a:"La botanique" },
+        { type:"classic", q:"Quel organe des plantes permet la photosynthèse ?", a:"Les feuilles" },
+        { type:"classic", q:"Quelle est la source principale de lumière sur Terre ?", a:"Le Soleil" },
+        { type:"classic", q:"Quelle planète abrite la vie connue ?", a:"La Terre" },
+        { type:"classic", q:"Quel phénomène transforme l’eau en vapeur ?", a:"L’évaporation" },
+        { type:"classic", q:"Quelle plante est symbole de paix ?", a:"L’olivier" },
+        { type:"classic", q:"Quel scientifique est associé à la théorie de l’évolution ?", a:"Charles Darwin" },
+        { type:"classic", q:"Quelle est la plus grande forêt tropicale du monde ?", a:"La forêt amazonienne" },
+        { type:"classic", q:"Quelle plante est souvent utilisée pour faire du thé ?", a:"Le théier" },
+        { type:"classic", q:"Quelle science étudie les étoiles ?", a:"L’astronomie" },
+        { type:"classic", q:"Quelle plante est souvent utilisée en cuisine méditerranéenne ?", a:"Le basilic" },
+        { type:"classic", q:"Quel phénomène provoque les saisons ?", a:"L’inclinaison de la Terre" },
+        { type:"classic", q:"Quelle plante est connue pour ses fleurs comestibles ?", a:"La capucine" },
+        { type:"classic", q:"Quelle énergie est produite par le vent ?", a:"L’énergie éolienne" },
+        { type:"classic", q:"Quelle plante est utilisée pour fabriquer le coton ?", a:"Le cotonnier" },
+        { type:"classic", q:"Quelle est la planète la plus chaude du système solaire ?", a:"Vénus" },
+        { type:"classic", q:"Quelle plante est associée à la lavande ?", a:"La Provence" },
+        { type:"classic", q:"Quelle science étudie le corps humain ?", a:"La biologie" },
+
+        { type:"classic", q:"Qui était le premier président de la Ve République française ?", a:"Charles de Gaulle" },
+        { type:"classic", q:"En quelle année a eu lieu la Révolution française ?", a:"1789" },
+        { type:"classic", q:"Qui était Napoléon Bonaparte ?", a:"Un empereur français" },
+        { type:"classic", q:"Quel événement marque la fin de la Seconde Guerre mondiale en Europe ?", a:"La capitulation allemande" },
+        { type:"classic", q:"Qui a découvert l’Amérique en 1492 ?", a:"Christophe Colomb" },
+        { type:"classic", q:"Quel mur est tombé en 1989 ?", a:"Le mur de Berlin" },
+        { type:"classic", q:"Quel pays était dirigé par les pharaons ?", a:"L’Égypte antique" },
+        { type:"classic", q:"Qui était Jules César ?", a:"Un homme politique et général romain" },
+        { type:"classic", q:"Quelle guerre opposa les États-Unis au Vietnam ?", a:"La guerre du Vietnam" },
+        { type:"classic", q:"Quelle ville était la capitale de l’Empire romain ?", a:"Rome" },
+        { type:"classic", q:"Qui était Louis XIV ?", a:"Un roi de France" },
+        { type:"classic", q:"Quel événement a déclenché la Première Guerre mondiale ?", a:"L’assassinat de l’archiduc François-Ferdinand" },
+        { type:"classic", q:"Quelle civilisation a construit les pyramides ?", a:"Les Égyptiens" },
+        { type:"classic", q:"Quel pays était divisé en deux pendant la guerre froide ?", a:"L’Allemagne" },
+        { type:"classic", q:"Qui était Cléopâtre ?", a:"Une reine d’Égypte" },
+        { type:"classic", q:"Quelle guerre a opposé le Nord et le Sud des États-Unis ?", a:"La guerre de Sécession" },
+        { type:"classic", q:"Qui était le chef de l’Empire macédonien ?", a:"Alexandre le Grand" },
+        { type:"classic", q:"Quelle période a succédé au Moyen Âge ?", a:"La Renaissance" },
+        { type:"classic", q:"Quel empire a précédé l’Empire romain ?", a:"L’Empire grec" },
+        { type:"classic", q:"Quelle invention a révolutionné l’imprimerie ?", a:"La presse à imprimer" },
+        { type:"classic", q:"Qui était Marie Curie ?", a:"Une scientifique" },
+        { type:"classic", q:"Quel pays a lancé la Révolution industrielle ?", a:"Le Royaume-Uni" },
+        { type:"classic", q:"Quelle guerre a duré de 1914 à 1918 ?", a:"La Première Guerre mondiale" },
+        { type:"classic", q:"Qui était Gandhi ?", a:"Un leader pacifiste indien" },
+        { type:"classic", q:"Quelle civilisation est à l’origine de la démocratie ?", a:"La Grèce antique" },
+
+        { type:"classic", q:"Vrai ou faux : les bananes poussent sur une plante herbacée et non sur un arbre.", a:"Vrai" },
+        { type:"classic", q:"Vrai ou faux : les humains n’utilisent que 10 % de leur cerveau.", a:"Faux" },
+        { type:"classic", q:"Vrai ou faux : les pieuvres ont trois cœurs.", a:"Vrai" },
+        { type:"classic", q:"Vrai ou faux : Napoléon était très petit.", a:"Faux" },
+        { type:"classic", q:"Vrai ou faux : le sang des poulpes est bleu.", a:"Vrai" },
+        { type:"classic", q:"Vrai ou faux : la Lune produit sa propre lumière.", a:"Faux" },
+        { type:"classic", q:"Vrai ou faux : les dauphins dorment avec un seul hémisphère du cerveau à la fois.", a:"Vrai" },
+        { type:"classic", q:"Vrai ou faux : les Vikings portaient des casques à cornes.", a:"Faux" },
+        { type:"classic", q:"Vrai ou faux : les requins n’ont pas d’os.", a:"Vrai" },
+        { type:"classic", q:"Vrai ou faux : on peut voir la Grande Muraille de Chine à l’œil nu depuis l’espace.", a:"Faux" },
+        { type:"classic", q:"Vrai ou faux : les flamants roses sont roses grâce à leur alimentation.", a:"Vrai" },
+        { type:"classic", q:"Vrai ou faux : les poissons rouges ont une mémoire de trois secondes.", a:"Faux" },
+        { type:"classic", q:"Vrai ou faux : le cerveau humain ne ressent pas la douleur.", a:"Vrai" },
+        { type:"classic", q:"Vrai ou faux : les éclairs sont plus froids que la surface du Soleil.", a:"Faux" },
+        { type:"classic", q:"Vrai ou faux : certains animaux peuvent détecter les séismes avant qu’ils ne se produisent.", a:"Vrai" },
+        { type:"classic", q:"Vrai ou faux : la baleine bleue est plus grande que le plus grand dinosaure.", a:"Vrai" },
+        { type:"classic", q:"Vrai ou faux : les chauves-souris sont aveugles.", a:"Faux" },
+        { type:"classic", q:"Vrai ou faux : les éléphants peuvent reconnaître leur reflet dans un miroir.", a:"Vrai" },
+        { type:"classic", q:"Vrai ou faux : les zèbres ont tous exactement les mêmes rayures.", a:"Faux" },
+        { type:"classic", q:"Vrai ou faux : les poulpes sont capables d’utiliser des outils.", a:"Vrai" },
+        { type:"classic", q:"Vrai ou faux : les manchots vivent au pôle Nord.", a:"Faux" },
+        { type:"classic", q:"Vrai ou faux : les chats ronronnent uniquement quand ils sont heureux.", a:"Faux" },
+        { type:"classic", q:"Vrai ou faux : les serpents sentent les odeurs grâce à leur langue.", a:"Vrai" },
+        { type:"classic", q:"Vrai ou faux : les grenouilles sont toutes venimeuses.", a:"Faux" },
+        { type:"classic", q:"Vrai ou faux : le moustique est l’animal qui cause le plus de morts humaines chaque année.", a:"Vrai" }
       ],
+
+
       "Expressions": [
-        // { type:"expression", start:"Début...", end:"fin...", explain:"(optionnel)" },
+        { type:"expression", start:"Qui vole un œuf", end:"vole un bœuf" },
+        { type:"expression", start:"Pierre qui roule", end:"n’amasse pas mousse" },
+        { type:"expression", start:"C’est pas au vieux singe", end:"qu’on apprend à faire la grimace" },
+        { type:"expression", start:"La bave du crapaud", end:"n’atteint pas la blanche colombe" },
+        { type:"expression", start:"Quand le chat n’est pas là", end:"les souris dansent" },
+        { type:"expression", start:"Il ne faut pas vendre la peau de l’ours", end:"avant de l’avoir tué" },
+        { type:"expression", start:"Les chiens", end:"ne font pas des chats" },
+        { type:"expression", start:"Tel père", end:"tel fils" },
+        { type:"expression", start:"L’habit", end:"ne fait pas le moine" },
+        { type:"expression", start:"Petit à petit", end:"l’oiseau fait son nid" },
+        { type:"expression", start:"Rome", end:"ne s’est pas faite en un jour" },
+        { type:"expression", start:"Tout vient à point", end:"à qui sait attendre" },
+        { type:"expression", start:"Rien ne sert de courir", end:"il faut partir à point" },
+        { type:"expression", start:"Un tiens", end:"vaut mieux que deux tu l’auras" },
+        { type:"expression", start:"Chassez le naturel", end:"il revient au galop" },
+        { type:"expression", start:"Qui sème le vent", end:"récolte la tempête" },
+        { type:"expression", start:"On récolte", end:"ce que l’on sème" },
+        { type:"expression", start:"Après la pluie", end:"le beau temps" },
+        { type:"expression", start:"Les apparences", end:"sont trompeuses" },
+        { type:"expression", start:"Il n’y a pas de fumée", end:"sans feu" },
+        { type:"expression", start:"On n’a pas élevé", end:"les cochons ensemble" },
+        { type:"expression", start:"Pousser mémé", end:"dans les orties" },
+        { type:"expression", start:"Mettre la charrue", end:"avant les bœufs" },
+        { type:"expression", start:"Jeter l’argent", end:"par les fenêtres" },
+        { type:"expression", start:"Avoir le beurre", end:"et l’argent du beurre" },
+        { type:"expression", start:"Tirer", end:"les ficelles" },
+        { type:"expression", start:"Mettre de l’eau", end:"dans son vin" },
+        { type:"expression", start:"Tourner autour", end:"du pot" },
+        { type:"expression", start:"Mettre les pieds", end:"dans le plat" },
+        { type:"expression", start:"Avoir le cul", end:"entre deux chaises" },
+        { type:"expression", start:"Tomber dans", end:"le panneau" },
+        { type:"expression", start:"Chercher midi", end:"à quatorze heures" },
+        { type:"expression", start:"Couper l’herbe", end:"sous le pied" },
+        { type:"expression", start:"Se tirer une balle", end:"dans le pied" },
+        { type:"expression", start:"Avoir plus d’un tour", end:"dans son sac" },
+        { type:"expression", start:"Être au pied", end:"du mur" },
+        { type:"expression", start:"Être dans de beaux", end:"draps" },
+        { type:"expression", start:"Avoir la tête sur", end:"les épaules" },
+        { type:"expression", start:"Avoir la tête dans", end:"les nuages" },
+        { type:"expression", start:"Avoir un poil", end:"dans la main" },
+        { type:"expression", start:"Avoir le cœur sur", end:"la main" },
+        { type:"expression", start:"Avoir la main", end:"lourde ou verte" },
+        { type:"expression", start:"Avoir la main", end:"verte ou lourde" },
+        { type:"expression", start:"Avoir un chat", end:"dans la gorge" },
+        { type:"expression", start:"Avoir la langue", end:"bien pendue" },
+        { type:"expression", start:"Avoir la moutarde", end:"qui monte au nez" },
+        { type:"expression", start:"Avoir les yeux", end:"plus gros que le ventre" },
+        { type:"expression", start:"Faire d’une pierre", end:"deux coups" },
+        { type:"expression", start:"Mettre les points", end:"sur les i" },
+        { type:"expression", start:"Mettre cartes", end:"sur table" },
+        { type:"expression", start:"Tirer son épingle", end:"du jeu" },
+        { type:"expression", start:"Sauver", end:"les meubles" },
+        { type:"expression", start:"En faire tout", end:"un fromage" },
+        { type:"expression", start:"Faire la part", end:"des choses" },
+        { type:"expression", start:"Faire contre mauvaise fortune", end:"bon cœur" },
+        { type:"expression", start:"Mettre la main", end:"à la pâte" },
+        { type:"expression", start:"Faire la sourde", end:"oreille" },
+        { type:"expression", start:"Les carottes", end:"sont cuites" },
+        { type:"expression", start:"Le jeu n'en vaut pas", end:"la chandelle" },
+        { type:"expression", start:"Les murs", end:"ont des oreilles" },
+        { type:"expression", start:"L’union", end:"fait la force" },
+        { type:"expression", start:"Diviser", end:"pour mieux régner" },
+        { type:"expression", start:"La nuit", end:"porte conseil" },
+        { type:"expression", start:"Mieux vaut tard", end:"que jamais" },
+        { type:"expression", start:"L’argent", end:"ne fait pas le bonheur" },
+        { type:"expression", start:"Loin des yeux", end:"loin du cœur" },
+        { type:"expression", start:"Il ne faut pas mettre tous ses œufs", end:"dans le même panier" },
+        { type:"expression", start:"À force de forger", end:"on devient forgeron" },
+        { type:"expression", start:"Quand on veut", end:"on peut" },
+        { type:"expression", start:"Il faut tourner sept fois sa langue", end:"dans sa bouche avant de parler" },
+        { type:"expression", start:"Les absents", end:"ont toujours tort" },
+        { type:"expression", start:"On ne fait pas d’omelette", end:"sans casser des œufs" },
+        { type:"expression", start:"Mieux vaut être seul", end:"que mal accompagné" },
+        { type:"expression", start:"Faute avouée", end:"à moitié pardonnée" },
+        { type:"expression", start:"Les cordonniers", end:"sont les plus mal chaussés" },
+        { type:"expression", start:"Qui ne dit mot", end:"consent" },
+        { type:"expression", start:"L’exception", end:"confirme la règle" },
+        { type:"expression", start:"Le silence", end:"est d’or" },
+        { type:"expression", start:"Mieux vaut prévenir", end:"que guérir" },
+        { type:"expression", start:"On ne change pas", end:"une équipe qui gagne" },
+        { type:"expression", start:"Le ridicule", end:"ne tue pas" },
+        { type:"expression", start:"C’est la goutte d’eau", end:"qui fait déborder le vase" },
+        { type:"expression", start:"Il n’y a que la vérité", end:"qui blesse" },
+        { type:"expression", start:"Le mieux est", end:"l’ennemi du bien" },
+        { type:"expression", start:"Quand on parle du loup", end:"on en voit la queue" },
+        { type:"expression", start:"Trop bon", end:"trop con" },
+        { type:"expression", start:"Les paroles s’envolent", end:"les écrits restent" },
+        { type:"expression", start:"Il n’y a pas pire sourd", end:"que celui qui ne veut pas entendre" },
+        { type:"expression", start:"La curiosité", end:"est un vilain défaut" },
+        { type:"expression", start:"Le hasard", end:"fait bien les choses" }
       ],
+
       "Action ou Vérité": [
-        // Pour l'instant vide comme tu l'as demandé (mais tu peux ajouter via le formulaire)
-        // { type:"action", q:"..." } ou { type:"verite", q:"..." }
+        {
+          type: "aov",
+          q: "Action ou Vérité ?",
+          actions: [
+          "Fais 10 pompes",
+          "Parle uniquement en rimes pendant 2 tours",
+          "Fais deviner un film uniquement avec des mimes",
+          "Lire le dernier message envoyé sur ton téléphone",
+          "Bois un short en faisant le bruit d'un animal au choix",
+          "Imite un autre joueur pendant 30sec",
+          "Parle avec un accent choisit par les autres pendant 3 tours",
+          "Ouvre la fenêtre et cris « capu je t'aime »",
+          "Fais un mini défilé avec une pause ridicule",
+          "Envoie une photo avec un filtre à une personne au hasard choisi par les autres",
+          "Répète une phrase donnée en enlevant un lettre choisis par les autres",
+          "Fais un karaoke pendant 30 sec",
+          "Vous 5 gorgées avec ton voisins de gauche",
+          "Raconte une blague anecdotes sur personne tu tu nous cul sec",
+          "Laisser quelqu'un choisir ta photo de profil pendant 10 minutes",
+          "Faire un compliment sincère à chaque joueur",
+          "Raconter une histoire inventée en 30 secondes",
+          "Bois une gorgée à chaque fois que quelqu'un rit pendant 1 minute",
+          "Bois autant de gorgées que de personnes dans la pièce",
+          "Regarde quelqu'un droit dans les yeux sans parler pendant 1 minute",
+          "Bois sans utiliser tes mains",
+          "Bois une gorgée pour chaque ex que tu as eu"
+
+          ],
+          truths: [
+            "Quand as tu pleuré pour la dernière fois ?",
+            "Qui dans la pièce te connaît le moins selon toi ?",
+            "Quel est ton plus gros red flag en soirée ?",
+            "As-tu déjà stalké quelqu’un beaucoup trop longtemps ?",
+            "Quelle est la chose la plus immature que tu fais encore ?",
+            "Qui choisirais-tu pour partir en vacances ici ?",
+            "Quel est ton talent le plus inutile ?",
+            "As-tu déjà fait semblant d’aller bien alors que non ?",
+            "Quelle est la pire excuse que tu aies déjà donnée ?",
+            "Qui t’intimide le plus (ou t’impressionne) dans la pièce ?",
+            "Quel est le plus gros malaise que tu aies vécu en soirée ?",
+            "Quelle est la chose que tu n’oses jamais dire mais que tu penses souvent ?",
+            "As-tu déjà eu un crush improbable ?",
+            "Quel est ton plaisir coupable ?",
+            "Quelle est la chose la plus spontanée que tu aies faite récemment ?",
+            "Si tu devais échanger ta vie avec quelqu’un ici, qui serait-ce ?",
+            "Quelle est ta plus grande peur un peu ridicule ?",
+            "Le nom de la personne que tu aimes le moins a BSB",
+            "As-tu déjà embrassé quelqu'un ivre que tu n'aurais pas embrassé sobre ?",
+            "As-tu déjà envoyé un message que tu as regretté le lendemain ?",
+            "As-tu déjà eu un blackout ?",
+            "Préfères-tu draguer ivre ou sobre ?",
+            "As-tu déjà bu pour te donner du courage ?",
+            "Quelle est la personne à qui tu écris le plus quand tu es bourré(e) ?",
+            "As-tu déjà été jaloux(se) en soirée alcoolisée ?",
+            "Quelle est la chose la plus indécente que tu aies pensée en soirée ?",
+            "As-tu déjà désiré quelqu'un que tu ne devais pas ?",
+            "As-tu déjà utilisé l'alcool comme excuse ?",
+            "Fais un compliment très osé à la personne de ton choix, puis bois",
+            "As tu déjà fais semblant d'aimer quelqu'un alors que ce n'était pas le cas",
+            "As tu déjà couché avec quelqu'un sur un coup de tête",
+            "Quelle est la chose la plus folle que tu es fait pour séduire quelqu'un",
+            
+            "quel est ton plus gros fantasme",
+            "As tu déjà ri à un moment totalement inapproprié si oui lequel",
+            "Quel est le mensonge le plus récent que tu aies raconté",
+            "Qu'elle est la chose la plus embarrassante que tu aies fait",
+            "As tu une remarque à faire à la personne à ta droite",
+            "As tu déjà menti pour ne pas sortir avec quelqu'un",
+            "Qu'elle est la dernière personne sur laquelle tu aies fantasmé"
+
+          ]
+        }
       ]
     };
 
     // =========================================================
-    // Persistance locale (questions ajoutées)
-    // =========================================================
-    const STORAGE_KEY = "quiz_custom_questions_v1";
-
-    function loadCustomBank() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return {};
-        const parsed = JSON.parse(raw);
-        return (parsed && typeof parsed === "object") ? parsed : {};
-      } catch {
-        return {};
-      }
-    }
-
-    function saveCustomBank(custom) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(custom));
-    }
-
-    function deepMergeBanks(base, custom) {
-      const merged = {};
-      const cats = new Set([...Object.keys(base), ...Object.keys(custom)]);
-      for (const c of cats) {
-        merged[c] = [
-          ...(base[c] ?? []),
-          ...(custom[c] ?? [])
-        ];
-      }
-      return merged;
-    }
-
-    let CUSTOM_BANK = loadCustomBank();
-    let BANK = deepMergeBanks(BASE_BANK, CUSTOM_BANK);
-
-    // =========================================================
-    // Éléments UI
+    // UI elements
     // =========================================================
     const catSelect = document.getElementById("catSelect");
     const startBtn = document.getElementById("startBtn");
@@ -171,14 +488,31 @@
     const answerText = document.getElementById("answerText");
     const explainText = document.getElementById("explainText");
 
-    // Ajout
-    const addCat = document.getElementById("addCat");
-    const addType = document.getElementById("addType");
-    const fields = document.getElementById("fields");
-    const addBtn = document.getElementById("addBtn");
-    const clearStoredBtn = document.getElementById("clearStoredBtn");
-    const addFeedback = document.getElementById("addFeedback");
-    const countPill = document.getElementById("countPill");
+    // =========================================================
+    // AJOUT UI : choix Action / Vérité (invisible sauf AOV)
+    // =========================================================
+    const controlsCardRow = document.querySelector(".card .row"); // la 1ère card = contrôles
+    const aovWrap = document.createElement("div");
+    aovWrap.className = "row";
+    aovWrap.style.gap = "10px";
+
+    const aovLabel = document.createElement("label");
+    aovLabel.className = "muted";
+    aovLabel.textContent = "Mode A/V :";
+
+    const aovSelect = document.createElement("select");
+    aovSelect.id = "aovSelect";
+    aovSelect.innerHTML = `
+      <option value="action">Action</option>
+      <option value="truth">Vérité</option>
+    `;
+
+    aovWrap.appendChild(aovLabel);
+    aovWrap.appendChild(aovSelect);
+
+    // on l’insère juste après le select catégorie
+    controlsCardRow.insertBefore(aovWrap, startBtn);
+    aovWrap.style.display = "none";
 
     // =========================================================
     // Quiz state
@@ -186,23 +520,30 @@
     let deck = [];
     let idx = -1;
 
-    // =========================================================
-    // Helpers
-    // =========================================================
-    function populateCategories() {
-      const cats = Object.keys(BANK);
+    function typeLabel(t) {
+      if (t === "classic") return "Culture G";
+      if (t === "expression") return "Expressions";
+      if (t === "aov_action") return "Action";
+      if (t === "aov_truth") return "Vérité";
+      return "—";
+    }
 
-      catSelect.innerHTML = "";
-      addCat.innerHTML = "";
+    function applyColorsForType(t) {
+      categoryTag.classList.remove("tag-green","tag-orange","tag-pink","tag-turquoise");
+      typeTag.classList.remove("tag-green","tag-orange","tag-pink","tag-turquoise");
+      typeTag.classList.remove("muted");
 
-      for (const cat of cats) {
-        const opt1 = document.createElement("option");
-        opt1.value = cat; opt1.textContent = cat;
-        catSelect.appendChild(opt1);
+      let cls = "";
+      if (t === "classic") cls = "tag-green";
+      else if (t === "expression") cls = "tag-orange";
+      else if (t === "aov_action") cls = "tag-pink";
+      else if (t === "aov_truth") cls = "tag-turquoise";
 
-        const opt2 = document.createElement("option");
-        opt2.value = cat; opt2.textContent = cat;
-        addCat.appendChild(opt2);
+      if (cls) {
+        categoryTag.classList.add(cls);
+        typeTag.classList.add(cls);
+      } else {
+        typeTag.classList.add("muted");
       }
     }
 
@@ -219,37 +560,60 @@
       return a;
     }
 
-    function buildDeck(category) {
-      const list = BANK[category] ?? [];
-      deck = list.map(item => ({...item, category}));
-      idx = -1;
+    function populateCategories() {
+      const cats = Object.keys(BANK);
+      catSelect.innerHTML = "";
+      for (const cat of cats) {
+        const opt = document.createElement("option");
+        opt.value = cat;
+        opt.textContent = cat;
+        catSelect.appendChild(opt);
+      }
     }
 
-    function typeLabel(t) {
-      if (t === "classic") return "Culture G";
-      if (t === "expression") return "Expression (deviner la fin)";
-      if (t === "action") return "Action";
-      if (t === "verite") return "Vérité";
-      return "—";
+    function buildDeck(category) {
+      idx = -1;
+      deck = [];
+
+      if (category === "Action ou Vérité") {
+        const pack = (BANK[category] && BANK[category][0]) ? BANK[category][0] : null;
+        if (!pack) return;
+
+        const mode = aovSelect.value; // "action" ou "truth"
+        const list = mode === "action" ? (pack.actions || []) : (pack.truths || []);
+
+        deck = list.map(text => ({
+          category,
+          type: mode === "action" ? "aov_action" : "aov_truth",
+          q: pack.q || "Action ou Vérité ?",
+          a: text
+        }));
+        return;
+      }
+
+      const list = BANK[category] ?? [];
+      deck = list.map(item => ({ ...item, category }));
     }
 
     function renderEmpty(category) {
       categoryTag.textContent = category;
       typeTag.textContent = "—";
+      applyColorsForType(""); // reset couleurs
       progress.textContent = `0 / 0`;
-      questionText.textContent = `Aucune question pour “${category}”. Ajoute-en avec le formulaire au-dessus.`;
+      questionText.textContent = `Aucune question pour “${category}”.`;
       hintText.textContent = "";
       answerBox.style.display = "none";
       setDisabledQuizControls(true);
     }
 
     function renderQuestion() {
-      if (!deck.length) return;
-
+      if (!deck.length || idx < 0) return;
       const q = deck[idx];
 
       categoryTag.textContent = q.category;
       typeTag.textContent = typeLabel(q.type);
+      applyColorsForType(q.type);
+
       progress.textContent = `${idx + 1} / ${deck.length}`;
 
       answerBox.style.display = "none";
@@ -259,18 +623,26 @@
       if (q.type === "classic") {
         questionText.textContent = q.q;
         hintText.textContent = "Répondez à l’oral, puis révélez la réponse.";
+        revealBtn.disabled = false;
       } else if (q.type === "expression") {
-        questionText.textContent = `Complète l’expression : ${q.start}`;
+        questionText.textContent = `Complète l’expression : ${q.start} ………`;
         hintText.textContent = "Devine la fin à l’oral, puis révèle la réponse.";
-      } else if (q.type === "action" || q.type === "verite") {
-        questionText.textContent = q.q;
-        hintText.textContent = "Faites-le / répondez à l’oral, puis passez à la suivante.";
+        revealBtn.disabled = false;
+      } else if (q.type === "aov_action") {
+        questionText.textContent = `Action : ${q.a ?? "(action manquante)"}`;
+        hintText.textContent = "Fais l’action.";
+        revealBtn.disabled = true; // déjà affiché
+      } else if (q.type === "aov_truth") {
+        questionText.textContent = `Vérité : ${q.a ?? "(vérité manquante)"}`;
+        hintText.textContent = "Réponds à l’oral.";
+        revealBtn.disabled = true; // déjà affiché
       } else {
-        questionText.textContent = "Type inconnu (vérifie la question).";
+        questionText.textContent = "Type inconnu.";
         hintText.textContent = "";
+        revealBtn.disabled = true;
       }
 
-      setDisabledQuizControls(false);
+      nextBtn.disabled = false;
     }
 
     function startQuiz() {
@@ -301,9 +673,8 @@
         answerText.textContent = q.a ?? "(réponse manquante)";
       } else if (q.type === "expression") {
         answerText.textContent = `${q.start} ${q.end ?? "(fin manquante)"}`;
-      } else if (q.type === "action" || q.type === "verite") {
-        // Action/Vérité : pas forcément une "réponse"
-        answerText.textContent = q.explain ? q.explain : "—";
+      } else if (q.type === "aov_action" || q.type === "aov_truth") {
+        answerText.textContent = q.a ?? "(texte manquant)";
       } else {
         answerText.textContent = "—";
       }
@@ -323,188 +694,18 @@
 
       answerBox.style.display = "none";
       setDisabledQuizControls(true);
+
+      categoryTag.classList.remove("tag-green","tag-orange","tag-pink","tag-turquoise");
+      typeTag.classList.remove("tag-green","tag-orange","tag-pink","tag-turquoise");
+      typeTag.classList.add("muted");
     }
 
-    // =========================================================
-    // Formulaire d'ajout
-    // =========================================================
-    function setTypeOptionsForCategory(category) {
-      addType.innerHTML = "";
-
-      const opts = [];
-      if (category === "Culture générale") opts.push(["classic", "Culture générale"]);
-      else if (category === "Expressions") opts.push(["expression", "Expression"]);
-      else if (category === "Action ou Vérité") {
-        opts.push(["action", "Action"]);
-        opts.push(["verite", "Vérité"]);
-      } else {
-        // fallback
-        opts.push(["classic", "Question"]);
-      }
-
-      for (const [val, label] of opts) {
-        const o = document.createElement("option");
-        o.value = val; o.textContent = label;
-        addType.appendChild(o);
-      }
+    function updateAovUI() {
+      const isAov = catSelect.value === "Action ou Vérité";
+      aovWrap.style.display = isAov ? "flex" : "none";
     }
 
-    function renderFields() {
-      const category = addCat.value;
-      const type = addType.value;
-
-      fields.innerHTML = "";
-
-      // Champs communs
-      const explain = document.createElement("textarea");
-      explain.id = "f_explain";
-      explain.placeholder = "Explication (optionnel)";
-
-      if (type === "classic") {
-        fields.innerHTML = `
-          <div class="grid2">
-            <div>
-              <label class="muted">Question</label><br />
-              <textarea id="f_q" placeholder="Ex: Quelle est la capitale du Japon ?"></textarea>
-            </div>
-            <div>
-              <label class="muted">Réponse</label><br />
-              <textarea id="f_a" placeholder="Ex: Tokyo"></textarea>
-            </div>
-          </div>
-          <div style="margin-top:10px">
-            <label class="muted">Explication (optionnel)</label><br />
-            <textarea id="f_explain" placeholder="Ex: Tokyo est la capitale depuis 1868."></textarea>
-          </div>
-        `;
-      } else if (type === "expression") {
-        fields.innerHTML = `
-          <div class="grid2">
-            <div>
-              <label class="muted">Début de l’expression</label><br />
-              <textarea id="f_start" placeholder="Ex: Pierre qui roule…"></textarea>
-            </div>
-            <div>
-              <label class="muted">Fin à deviner</label><br />
-              <textarea id="f_end" placeholder="Ex: n’amasse pas mousse"></textarea>
-            </div>
-          </div>
-          <div style="margin-top:10px">
-            <label class="muted">Explication (optionnel)</label><br />
-            <textarea id="f_explain" placeholder="Ex: Une personne toujours en mouvement…"></textarea>
-          </div>
-        `;
-      } else if (type === "action" || type === "verite") {
-        fields.innerHTML = `
-          <div>
-            <label class="muted">${type === "action" ? "Action" : "Vérité"}</label><br />
-            <textarea id="f_q" placeholder="${type === "action" ? "Ex: Fais 10 squats." : "Ex: Quel est ton plus gros défaut ?"}"></textarea>
-          </div>
-          <div style="margin-top:10px">
-            <label class="muted">Note / explication (optionnel)</label><br />
-            <textarea id="f_explain" placeholder="Optionnel"></textarea>
-          </div>
-        `;
-      } else {
-        fields.innerHTML = `
-          <div>
-            <label class="muted">Question</label><br />
-            <textarea id="f_q" placeholder="Ta question…"></textarea>
-          </div>
-        `;
-      }
-
-      updateCountPill();
-      addFeedback.textContent = "";
-    }
-
-    function updateCountPill() {
-      const category = addCat.value;
-      const n = (BANK[category] ?? []).length;
-      countPill.textContent = `${n} question${n > 1 ? "s" : ""} dans "${category}"`;
-    }
-
-    function getVal(id) {
-      const el = document.getElementById(id);
-      return el ? el.value.trim() : "";
-    }
-
-    function rebuildBankFromStorage() {
-      CUSTOM_BANK = loadCustomBank();
-      BANK = deepMergeBanks(BASE_BANK, CUSTOM_BANK);
-      populateCategories();
-      updateCountPill();
-    }
-
-    function addQuestionFromForm() {
-      const category = addCat.value;
-      const type = addType.value;
-
-      let item = { type };
-
-      if (type === "classic") {
-        const q = getVal("f_q");
-        const a = getVal("f_a");
-        const explain = getVal("f_explain");
-        if (!q || !a) {
-          addFeedback.innerHTML = `<span class="ko">Il faut une question ET une réponse.</span>`;
-          return;
-        }
-        item.q = q;
-        item.a = a;
-        if (explain) item.explain = explain;
-      } else if (type === "expression") {
-        const start = getVal("f_start");
-        const end = getVal("f_end");
-        const explain = getVal("f_explain");
-        if (!start || !end) {
-          addFeedback.innerHTML = `<span class="ko">Il faut le début ET la fin.</span>`;
-          return;
-        }
-        item.start = start;
-        item.end = end;
-        if (explain) item.explain = explain;
-      } else if (type === "action" || type === "verite") {
-        const q = getVal("f_q");
-        const explain = getVal("f_explain");
-        if (!q) {
-          addFeedback.innerHTML = `<span class="ko">Il faut écrire une ${type === "action" ? "action" : "vérité"}.</span>`;
-          return;
-        }
-        item.q = q;
-        if (explain) item.explain = explain;
-      } else {
-        const q = getVal("f_q");
-        if (!q) {
-          addFeedback.innerHTML = `<span class="ko">Champ vide.</span>`;
-          return;
-        }
-        item.q = q;
-      }
-
-      // Stockage dans CUSTOM_BANK (pour ne pas toucher BASE_BANK)
-      const current = loadCustomBank();
-      if (!current[category]) current[category] = [];
-      current[category].push(item);
-      saveCustomBank(current);
-
-      // Rebuild BANK + UI
-      rebuildBankFromStorage();
-      renderFields(); // reset champs
-      addFeedback.innerHTML = `<span class="ok">Ajouté ✅</span>`;
-    }
-
-    function clearStored() {
-      localStorage.removeItem(STORAGE_KEY);
-      rebuildBankFromStorage();
-      renderFields();
-      addFeedback.innerHTML = `<span class="ok">Ajouts effacés ✅</span>`;
-      resetAll();
-    }
-
-    // =========================================================
     // Events
-    // =========================================================
     startBtn.addEventListener("click", startQuiz);
     nextBtn.addEventListener("click", nextQuestion);
     revealBtn.addEventListener("click", revealAnswer);
@@ -522,21 +723,18 @@
       renderQuestion();
     });
 
-    addCat.addEventListener("change", () => {
-      setTypeOptionsForCategory(addCat.value);
-      renderFields();
+    catSelect.addEventListener("change", () => {
+      updateAovUI();
+      resetAll();
     });
 
-    addType.addEventListener("change", renderFields);
-    addBtn.addEventListener("click", addQuestionFromForm);
-    clearStoredBtn.addEventListener("click", clearStored);
+    aovSelect.addEventListener("change", () => {
+      if (catSelect.value === "Action ou Vérité") resetAll();
+    });
 
-    // =========================================================
     // Init
-    // =========================================================
     populateCategories();
-    setTypeOptionsForCategory(addCat.value);
-    renderFields();
+    updateAovUI();
     resetAll();
   </script>
 </body>
